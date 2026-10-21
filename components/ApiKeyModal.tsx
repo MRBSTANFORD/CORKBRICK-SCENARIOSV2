@@ -98,7 +98,24 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onConfirm, a
             </div>
 
             {isGemini && (
-              <div className="text-xs text-stone-500 pl-7 space-y-1">
+              <div className="text-xs text-stone-600 pl-7 space-y-2 pt-1">
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs leading-relaxed space-y-1">
+                  <div className="font-bold flex items-center gap-1.5 text-emerald-950">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>100% Free Tier Available ($0 Cost)</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-800">
+                    • <strong>1,500 free requests/day</strong> for Gemini Flash reasoning and descriptions.
+                  </p>
+                  <p className="text-[11px] text-emerald-800">
+                    • <strong>$300 free trial credit</strong> from Google Cloud = <strong>~10,000 free image generations</strong> (~$0.03/image).
+                  </p>
+                  <p className="text-[11px] text-emerald-850">
+                    • <strong>Pro-Forma Verification:</strong> Google asks for a billing setup solely to verify human identity against bots. You are <em>not charged</em> within free limits and cards are not auto-billed without explicit consent.
+                  </p>
+                </div>
                 <p className="text-[11px] text-stone-500">
                   Tip: In Google AI Studio, click <strong>"Create API key"</strong>, select your project or create a new one, and copy the key (starts with <code className="bg-stone-100 px-1 py-0.5 rounded text-stone-700">AIza...</code>).
                 </p>
