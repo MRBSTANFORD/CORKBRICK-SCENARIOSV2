@@ -1,0 +1,6 @@
+{
+  "name": "Corkbrick Scenario Generator - Empower your Imagination Deployed ",
+  "description": "Upload an image of a Corkbrick solution and use text prompts to generate new scenarios and environments for it using the Gemini 2.5 Flash Image model.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
