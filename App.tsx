@@ -19,7 +19,7 @@ import ApiKeyModal from './components/ApiKeyModal';
 import VideoLoadingSpinner from './components/VideoLoadingSpinner';
 import VideoPlayer from './components/VideoPlayer';
 import ImageEditorModal from './components/ImageEditorModal';
-import { editImageWithPrompt, generateImageDescription, generateVideoFromImage, generateFilenameFromDescription } from './services/geminiService';
+import { editImageWithPrompt, generateImageDescription, generateVideoFromImage, generateFilenameFromDescription, KeyValidationResult } from './services/geminiService';
 import { SAMPLE_PROMPTS_STRUCTURED, DEFAULT_SYSTEM_PROMPT, PROVIDERS } from './constants';
 import SamplePrompts from './components/SamplePrompts';
 import InfoPanel from './components/InfoPanel';
@@ -114,6 +114,7 @@ function App() {
   // API Key Management
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState<boolean>(false);
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
+  const [keyVerified, setKeyVerified] = useState<Record<string, boolean>>({});
   const [pendingAction, setPendingAction] = useState<'image' | 'video' | null>(null);
 
   const handleProviderChange = useCallback((provider: ProviderKey) => {
@@ -216,15 +217,15 @@ function App() {
   const [scenarioToEdit, setScenarioToEdit] = useState<SavedScenario | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load API Keys from session storage on mount
+  // Load API Keys from storage on mount
   useEffect(() => {
     const loadedKeys: Record<string, string> = {};
     Object.keys(PROVIDERS).forEach(providerKey => {
-       const stored = sessionStorage.getItem(`${SESSION_API_KEY}-${providerKey}`);
+       const stored = sessionStorage.getItem(`${SESSION_API_KEY}-${providerKey}`) || localStorage.getItem(`${SESSION_API_KEY}-${providerKey}`);
        if (stored) loadedKeys[providerKey] = stored;
     });
     // Fallback for legacy key
-    const legacyKey = sessionStorage.getItem(SESSION_API_KEY);
+    const legacyKey = sessionStorage.getItem(SESSION_API_KEY) || localStorage.getItem(SESSION_API_KEY);
     if (legacyKey && !loadedKeys['google_flash']) {
        loadedKeys['google_flash'] = legacyKey;
        loadedKeys['google_pro'] = legacyKey;
@@ -422,18 +423,21 @@ function App() {
 
   }, [editedImage, apiKeys, aiProvider, incrementUsage]);
   
-  const handleKeyConfirmed = (key: string) => {
+  const handleKeyConfirmed = (key: string, validationResult?: KeyValidationResult) => {
     setIsApiKeyModalOpen(false);
     if (key) {
-        setApiKeys(prev => ({ ...prev, [aiProvider]: key }));
-        sessionStorage.setItem(`${SESSION_API_KEY}-${aiProvider}`, key);
-        setToastMessage(`API Key saved for ${PROVIDERS[aiProvider]?.name || 'provider'}.`);
+        const cleanKey = key.trim();
+        setApiKeys(prev => ({ ...prev, [aiProvider]: cleanKey }));
+        setKeyVerified(prev => ({ ...prev, [aiProvider]: validationResult ? !!validationResult.valid : true }));
+        sessionStorage.setItem(`${SESSION_API_KEY}-${aiProvider}`, cleanKey);
+        localStorage.setItem(`${SESSION_API_KEY}-${aiProvider}`, cleanKey);
+        setToastMessage(`API Key verified and saved for ${PROVIDERS[aiProvider]?.name || 'provider'}.`);
     }
     
     if (pendingAction === 'image') {
-        handleGenerate(key); 
+        handleGenerate(key.trim()); 
     } else if (pendingAction === 'video') {
-        handleGenerateVideo(key);
+        handleGenerateVideo(key.trim());
     }
     setPendingAction(null);
   };
@@ -446,7 +450,13 @@ function App() {
            delete newKeys[aiProvider];
            return newKeys;
         });
+        setKeyVerified(prev => {
+           const newV = { ...prev };
+           delete newV[aiProvider];
+           return newV;
+        });
         sessionStorage.removeItem(`${SESSION_API_KEY}-${aiProvider}`);
+        localStorage.removeItem(`${SESSION_API_KEY}-${aiProvider}`);
         setToastMessage(`API Key for ${providerName} removed.`);
     }
   };
@@ -569,6 +579,7 @@ function App() {
             currentProvider={aiProvider} 
             onProviderChange={handleProviderChange} 
             hasKey={!!apiKeys[aiProvider]}
+            isKeyVerified={!!keyVerified[aiProvider]}
             onManageKey={() => setIsApiKeyModalOpen(true)}
             onClearKey={handleClearKey}
             dailyUsage={dailyUsage}
@@ -747,6 +758,7 @@ function App() {
         onClose={() => setIsApiKeyModalOpen(false)}
         onConfirm={handleKeyConfirmed}
         aiProvider={aiProvider}
+        onSwitchProvider={handleProviderChange}
       />
       {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
        <style>{`

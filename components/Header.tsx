@@ -13,6 +13,7 @@ interface HeaderProps {
   currentProvider: ProviderKey;
   onProviderChange: (mode: ProviderKey) => void;
   hasKey: boolean;
+  isKeyVerified?: boolean;
   onManageKey: () => void;
   onClearKey: () => void;
   dailyUsage: DailyUsage;
@@ -28,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentProvider, 
   onProviderChange, 
   hasKey, 
+  isKeyVerified,
   onManageKey,
   dailyUsage,
   onResetUsage,
@@ -94,15 +96,17 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onManageKey}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border shadow-sm cursor-pointer ${
                 hasKey 
-                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100' 
-                  : 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100'
+                  ? isKeyVerified
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100' 
+                    : 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100'
+                  : 'bg-stone-50 border-stone-300 text-stone-700 hover:bg-stone-100'
               }`}
-              title={hasKey ? "API Key is set. Click to view or change." : "Set your API key for instant generation."}
+              title={hasKey ? (isKeyVerified ? "API Key is live-verified and ready." : "API Key is set. Click to test or change.") : "Set your API key for instant generation."}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1h-2v2H4v-2H2v-2h2v-2l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
               </svg>
-              <span>{hasKey ? 'Key: Active' : 'Setup Key'}</span>
+              <span>{hasKey ? (isKeyVerified ? 'Key: Verified ✓' : 'Key: Set') : 'Setup Key'}</span>
             </button>
           </div>
         </div>
