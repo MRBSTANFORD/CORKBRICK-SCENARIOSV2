@@ -304,28 +304,29 @@ export const validateApiKey = async (
         };
       }
 
-      const errJson = await directRes.json().catch(() => ({}));
-      const errMsg = errJson.error?.message || `Google HTTP ${directRes.status}`;
-      
-      if (errMsg.includes('API key not valid') || errMsg.includes('API_KEY_INVALID')) {
-        return {
-          valid: false,
-          status: 'INVALID_KEY',
-          message: 'Google rejected this API key. Please check for typos or regenerate the key in Google AI Studio.',
-        };
+      if (directRes.status === 404) {
+        // HTTP 404 on models listing is common for Google Cloud project-scoped keys; fall back to server verification
+        console.warn('Google models endpoint returned 404 for key, falling back to backend validation.');
+      } else {
+        const errJson = await directRes.json().catch(() => ({}));
+        const errMsg = errJson.error?.message || `Google HTTP ${directRes.status}`;
+        
+        if (errMsg.includes('API key not valid') || errMsg.includes('API_KEY_INVALID')) {
+          return {
+            valid: false,
+            status: 'INVALID_KEY',
+            message: 'Google rejected this API key. Please check for typos or regenerate the key in Google AI Studio.',
+          };
+        }
+        if (errMsg.includes('blocked') || errMsg.includes('restriction') || errMsg.includes('referer')) {
+          return {
+            valid: false,
+            status: 'RESTRICTED',
+            message: 'Google reported application or referrer restrictions on this key. Please set Application Restrictions to None in Google Cloud Console.',
+          };
+        }
+        // For other unhandled statuses, fall through to server check instead of prematurely blocking
       }
-      if (errMsg.includes('blocked') || errMsg.includes('restriction') || errMsg.includes('referer')) {
-        return {
-          valid: false,
-          status: 'RESTRICTED',
-          message: 'Google reported application or referrer restrictions on this key. Please remove HTTP Referrer restrictions in Google Cloud Console.',
-        };
-      }
-      return {
-        valid: false,
-        status: 'ERROR',
-        message: `Google API responded: ${errMsg}`,
-      };
     } catch (directErr: any) {
       console.warn('Direct Google validation encountered network restriction, falling back to server check:', directErr.message);
     }

@@ -249,11 +249,12 @@ const InfoPanel: React.FC = () => {
                   </div>
                   <p className="text-xs text-amber-900/90 leading-relaxed">
                     In several regions (including the EU and UK), Google requires users to link a Google Cloud billing account before activating multimodal image APIs. 
-                    <strong>This is a pro-forma security step</strong> designed by Google to prevent automated bot networks from abusing their servers.
+                    <strong>This is a security & identity verification step</strong> designed by Google to prevent automated bot networks from abusing their infrastructure.
                   </p>
-                  <ul className="text-xs text-amber-900/80 list-disc pl-5 space-y-1">
-                    <li><strong>No hidden automatic charges:</strong> When you sign up for the Google Cloud trial, Google provides a $300 credit and guarantees that your card is <strong>never charged automatically</strong> when the trial ends unless you manually upgrade.</li>
-                    <li><strong>Set a $1 Budget Alert:</strong> For complete peace of mind, you can set a budget threshold of $1.00 in the Google Cloud Console so Google notifies you before any real spend occurs.</li>
+                  <ul className="text-xs text-amber-900/80 list-disc pl-5 space-y-1.5">
+                    <li><strong>Exact Pricing Transparency:</strong> While Gemini <strong>text descriptions are 100% free</strong> (1,500 requests/day), Google Cloud bills image generation at <strong>~$0.026 to $0.030 per image (~0.025€)</strong>.</li>
+                    <li><strong>Why 3 images cost ~0.08€:</strong> 3 images × ~0.026€ = <strong>0.078€ (~0.08€)</strong>. If you have an active $300 trial credit, Google deducts from the credit; if your account is on standard billing, Google charges this exact amount to your billing invoice.</li>
+                    <li><strong>Set a $1 Budget Alert:</strong> For complete peace of mind, you can set a budget threshold of $1.00 in the Google Cloud Console so Google notifies you before any significant spend occurs.</li>
                   </ul>
                 </div>
 
