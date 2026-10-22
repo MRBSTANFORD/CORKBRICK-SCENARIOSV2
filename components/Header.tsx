@@ -6,7 +6,8 @@
  */
 import React from 'react';
 import { PROVIDERS } from '../constants';
-import { ProviderKey } from '../types';
+import { ProviderKey, DailyUsage } from '../types';
+import { UsageCounter } from './UsageCounter';
 
 interface HeaderProps {
   currentProvider: ProviderKey;
@@ -14,13 +15,24 @@ interface HeaderProps {
   hasKey: boolean;
   onManageKey: () => void;
   onClearKey: () => void;
+  dailyUsage: DailyUsage;
+  onResetUsage?: () => void;
+  onOpenGuide?: () => void;
 }
 
 /**
  * Top navigation header displaying Corkbrick AI branding, active AI provider selector,
- * and quick-access API key status and configuration.
+ * quick-access API key status, and live AI Credits & daily usage counter.
  */
-export const Header: React.FC<HeaderProps> = ({ currentProvider, onProviderChange, hasKey, onManageKey }) => {
+export const Header: React.FC<HeaderProps> = ({ 
+  currentProvider, 
+  onProviderChange, 
+  hasKey, 
+  onManageKey,
+  dailyUsage,
+  onResetUsage,
+  onOpenGuide
+}) => {
   return (
     <header className="bg-white shadow-sm sticky top-0 z-40 border-b border-stone-200">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
@@ -37,13 +49,14 @@ export const Header: React.FC<HeaderProps> = ({ currentProvider, onProviderChang
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+            {/* Provider Selector */}
             <div className="flex items-center bg-stone-100 rounded-lg p-1 border border-stone-200">
               {(Object.entries(PROVIDERS) as [ProviderKey, typeof PROVIDERS[ProviderKey]][]).map(([key, provider]) => (
                 <button
                   key={key}
                   onClick={() => onProviderChange(key)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
                     currentProvider === key
                       ? 'bg-white text-stone-900 shadow-sm border border-stone-200'
                       : 'text-stone-500 hover:text-stone-800'
@@ -64,11 +77,22 @@ export const Header: React.FC<HeaderProps> = ({ currentProvider, onProviderChang
               ))}
             </div>
 
-            <div className="h-8 w-[1px] bg-stone-200 hidden sm:block"></div>
+            <div className="h-6 w-[1px] bg-stone-200 hidden sm:block"></div>
 
+            {/* Always-Visible AI Credits & Usage Counter */}
+            <UsageCounter 
+              dailyUsage={dailyUsage}
+              currentProvider={currentProvider}
+              onResetUsage={onResetUsage}
+              onOpenGuide={onOpenGuide}
+            />
+
+            <div className="h-6 w-[1px] bg-stone-200 hidden sm:block"></div>
+
+            {/* API Key Status / Setup Button */}
             <button
               onClick={onManageKey}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border shadow-sm ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border shadow-sm cursor-pointer ${
                 hasKey 
                   ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100' 
                   : 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100'
@@ -78,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({ currentProvider, onProviderChang
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1h-2v2H4v-2H2v-2h2v-2l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
               </svg>
-              <span>{hasKey ? 'API Key: Active' : 'Setup API Key'}</span>
+              <span>{hasKey ? 'Key: Active' : 'Setup Key'}</span>
             </button>
           </div>
         </div>

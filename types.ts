@@ -53,3 +53,12 @@ export type SamplePromptsData = PromptCategory[];
 
 export type ProviderKey = 'google_flash' | 'google_pro' | 'huggingface';
 
+export interface DailyUsage {
+  date: string; // YYYY-MM-DD
+  imagesGenerated: number;
+  videosGenerated: number;
+  textGenerated: number;
+  providerUsage: Record<string, number>;
+}
+
+

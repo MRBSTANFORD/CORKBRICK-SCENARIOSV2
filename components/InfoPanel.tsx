@@ -35,7 +35,7 @@ const InfoPanel: React.FC = () => {
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden">
+    <div id="user-guide-panel" className="bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex justify-between items-center text-left p-5 sm:p-6 bg-gradient-to-r from-stone-50 to-white hover:bg-stone-50/80 transition-colors"

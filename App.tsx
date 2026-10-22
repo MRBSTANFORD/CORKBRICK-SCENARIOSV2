@@ -1,11 +1,12 @@
 
 /**
- * Rationale: Set default AI provider to Google Gemini ('google_flash') and simplify provider
- * options to Gemini and Hugging Face, eliminating deprecated endpoints and rate limits.
- * Reference Task: Resolve "Free experimental endpoint limits reached" error.
+ * Rationale: Integrated live AI Credits & Daily Usage Counter into state management,
+ * tracking images, videos, and descriptions created per active provider with automatic midnight reset
+ * and transparent zero-cost calculations.
+ * Reference Task: Add top-right visible AI credits and daily usage counter.
  */
 import React, { useState, useCallback, useEffect } from 'react';
-import type { ImageFile, SavedScenario, ProviderKey } from './types';
+import type { ImageFile, SavedScenario, ProviderKey, DailyUsage } from './types';
 import { Header } from './components/Header';
 import ImageUploader from './components/ImageUploader';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -25,6 +26,37 @@ import InfoPanel from './components/InfoPanel';
 
 const LOCAL_STORAGE_KEY = 'corkbrick-saved-scenarios';
 const SESSION_API_KEY = 'corkbrick-user-api-key';
+const DAILY_USAGE_STORAGE_KEY = 'corkbrick_ai_daily_usage';
+
+/**
+ * Returns today's date formatted as YYYY-MM-DD.
+ */
+const getTodayDateString = (): string => new Date().toISOString().split('T')[0];
+
+/**
+ * Loads the current day's usage statistics from local storage, or creates a clean record for today.
+ */
+const getInitialDailyUsage = (): DailyUsage => {
+  const today = getTodayDateString();
+  try {
+    const raw = window.localStorage.getItem(DAILY_USAGE_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.date === today) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn("Could not load daily usage from localStorage:", e);
+  }
+  return {
+    date: today,
+    imagesGenerated: 0,
+    videosGenerated: 0,
+    textGenerated: 0,
+    providerUsage: {}
+  };
+};
 
 // .. compressImageForStorage ..
 const compressImageForStorage = (dataUrl: string, maxSize = 800): Promise<string> => {
@@ -93,6 +125,75 @@ function App() {
 
   // Image editing state
   const [imageToEdit, setImageToEdit] = useState<ImageFile | null>(null);
+
+  // Live AI Credits & Daily Usage Tracker
+  const [dailyUsage, setDailyUsage] = useState<DailyUsage>(getInitialDailyUsage);
+
+  /**
+   * Increments daily usage counters and persists to localStorage.
+   * Resets counter automatically if the stored date is from a previous calendar day.
+   */
+  const incrementUsage = useCallback((type: 'image' | 'video' | 'text', provider: string) => {
+    setDailyUsage(prev => {
+      const today = getTodayDateString();
+      const base = prev.date === today ? prev : {
+        date: today,
+        imagesGenerated: 0,
+        videosGenerated: 0,
+        textGenerated: 0,
+        providerUsage: {}
+      };
+
+      const updated: DailyUsage = {
+        ...base,
+        imagesGenerated: type === 'image' ? base.imagesGenerated + 1 : base.imagesGenerated,
+        videosGenerated: type === 'video' ? base.videosGenerated + 1 : base.videosGenerated,
+        textGenerated: type === 'text' ? base.textGenerated + 1 : base.textGenerated,
+        providerUsage: {
+          ...base.providerUsage,
+          [provider]: (base.providerUsage[provider] || 0) + 1,
+        }
+      };
+
+      try {
+        window.localStorage.setItem(DAILY_USAGE_STORAGE_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.warn("Failed to persist daily usage:", e);
+      }
+      return updated;
+    });
+  }, []);
+
+  /**
+   * Resets today's usage statistics back to zero upon user confirmation.
+   */
+  const handleResetUsage = useCallback(() => {
+    const today = getTodayDateString();
+    const resetData: DailyUsage = {
+      date: today,
+      imagesGenerated: 0,
+      videosGenerated: 0,
+      textGenerated: 0,
+      providerUsage: {}
+    };
+    setDailyUsage(resetData);
+    try {
+      window.localStorage.setItem(DAILY_USAGE_STORAGE_KEY, JSON.stringify(resetData));
+    } catch (e) {
+      console.warn("Failed to reset daily usage in storage:", e);
+    }
+    setToastMessage("Daily usage counter reset to 0.");
+  }, []);
+
+  /**
+   * Scrolls smoothly to the User Guide & Help section.
+   */
+  const handleOpenGuide = useCallback(() => {
+    const el = document.getElementById('user-guide-panel');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, []);
 
   const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>(() => {
     try {
@@ -232,6 +333,7 @@ function App() {
           aiProvider
       );
       setEditedImage(editedImageResult);
+      incrementUsage('image', aiProvider);
 
       try {
         const mimeType = editedImageResult.substring(editedImageResult.indexOf(':') + 1, editedImageResult.indexOf(';'));
@@ -246,6 +348,7 @@ function App() {
         setDescription(descriptionResult);
 
         if (descriptionResult) {
+            incrementUsage('text', aiProvider);
             try {
                 const filenameResult = await generateFilenameFromDescription(descriptionResult, currentConfig.models.text, activeKey, aiProvider);
                 setGeneratedFilename(filenameResult);
@@ -271,7 +374,7 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  }, [originalImages, prompt, systemPrompt, apiKeys, aiProvider]);
+  }, [originalImages, prompt, systemPrompt, apiKeys, aiProvider, incrementUsage]);
 
   const handleGenerateVideo = useCallback(async (forceUseKey?: string) => {
     if (!editedImage) {
@@ -283,7 +386,7 @@ function App() {
     // If the provider is 'google_flash' or 'google_pro', we use that key. Otherwise we look for 'google_flash'.
     let videoProviderKey = aiProvider;
     if (aiProvider !== 'google_flash' && aiProvider !== 'google_pro') {
-       videoProviderKey = 'google_flash';
+      videoProviderKey = 'google_flash';
     }
     const activeKey = forceUseKey || apiKeys[videoProviderKey] || '';
 
@@ -303,6 +406,7 @@ function App() {
         const videoBlob = await generateVideoFromImage(editedImage, mimeType, setVideoGenerationStatus, activeKey);
         const videoUrl = URL.createObjectURL(videoBlob);
         setGeneratedVideoUrl(videoUrl);
+        incrementUsage('video', videoProviderKey);
     } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "An unknown error occurred during video generation.";
         if (errorMessage.includes("API Key") || errorMessage.includes("403")) {
@@ -316,7 +420,7 @@ function App() {
         setIsVideoLoading(false);
     }
 
-  }, [editedImage, apiKeys, aiProvider]);
+  }, [editedImage, apiKeys, aiProvider, incrementUsage]);
   
   const handleKeyConfirmed = (key: string) => {
     setIsApiKeyModalOpen(false);
@@ -467,6 +571,9 @@ function App() {
             hasKey={!!apiKeys[aiProvider]}
             onManageKey={() => setIsApiKeyModalOpen(true)}
             onClearKey={handleClearKey}
+            dailyUsage={dailyUsage}
+            onResetUsage={handleResetUsage}
+            onOpenGuide={handleOpenGuide}
         />
         <main className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-5xl">
           
