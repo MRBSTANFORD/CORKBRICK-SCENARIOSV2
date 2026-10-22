@@ -247,13 +247,23 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
           </div>
         </div>
 
-        <div className="p-4 bg-stone-50 border-t border-stone-200 flex flex-col sm:flex-row justify-end gap-2">
+        <div className="p-4 bg-stone-50 border-t border-stone-200 flex flex-col sm:flex-row justify-end items-center gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-stone-600 font-bold text-xs hover:text-stone-900 transition-colors cursor-pointer"
+            className="px-4 py-2 text-stone-600 font-bold text-xs hover:text-stone-900 transition-colors cursor-pointer mr-auto"
           >
             Cancel
           </button>
+
+          {manualKey.trim() && (
+            <button
+              onClick={handleForceSave}
+              className="px-3.5 py-2 text-stone-600 hover:text-stone-900 font-medium text-xs rounded-xl hover:bg-stone-200/60 transition-colors cursor-pointer"
+              title="Save key directly without waiting for validation check"
+            >
+              Save (Skip Test)
+            </button>
+          )}
           
           <button
             onClick={handleVerifyAndSubmit}
