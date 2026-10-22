@@ -1,9 +1,11 @@
 /**
- * Rationale: Add automatic client-side direct fallback for Gemini and Hugging Face when backend
- * routes return 404 / NOT_FOUND (e.g. when published on Vercel, SAP Build, or static hosting where Express is absent).
- * Reference Task: Resolve "The page could not be found NOT_FOUND cdg1::..." error in published Vercel/SAP deployment.
+ * Rationale: Use official @google/genai TypeScript SDK for client-side direct generation
+ * to resolve Google HTTP 405 (Method Not Allowed) caused by raw REST endpoint URL mismatch,
+ * ensuring seamless scenario generation across SAP Build, Vercel, and Cloud Run.
+ * Reference Task: Resolve Google HTTP 405 error in published application.
  */
 
+import { GoogleGenAI } from '@google/genai';
 import { VEO_MODEL_NAME, DEFAULT_VIDEO_PROMPT } from '../constants';
 import type { ImageFile, ProviderKey } from '../types';
 
@@ -49,7 +51,6 @@ const ensureOptimizedImage = async (img: ImageFile, maxDim = 1200): Promise<Imag
 
 /**
  * Direct client-side Hugging Face FLUX image generation.
- * Used when running on static hosts (e.g. Vercel) where Express backend is not present.
  */
 const directGenerateHuggingFace = async (
   prompt: string,
@@ -97,8 +98,8 @@ const directGenerateHuggingFace = async (
 };
 
 /**
- * Direct client-side Google Gemini image generation via official Generative Language API.
- * Seamless fallback for Vercel, SAP Build, and static deployments.
+ * Direct client-side Google Gemini image generation using official @google/genai SDK.
+ * Prevents HTTP 405 REST method errors and works natively in browser SPAs.
  */
 const directGenerateGeminiImage = async (
   images: ImageFile[],
@@ -107,14 +108,16 @@ const directGenerateGeminiImage = async (
   modelName: string,
   apiKey: string
 ): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey });
+
   const imageParts = images.map((img) => {
     let mimeType = img.mimeType || 'image/jpeg';
     if (mimeType === 'image/jpg') mimeType = 'image/jpeg';
     const data = img.dataUrl && img.dataUrl.includes(',') ? img.dataUrl.split(',')[1] : img.dataUrl;
     return {
       inlineData: {
-        mimeType,
         data,
+        mimeType,
       },
     };
   });
@@ -132,42 +135,33 @@ const directGenerateGeminiImage = async (
 
   for (const model of modelsToTry) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [...imageParts, textPart] }],
-          generationConfig: {
-            responseModalities: ['IMAGE'],
-          },
-        }),
+      console.info(`[directGenerateGeminiImage] Calling model ${model}...`);
+      const response = await ai.models.generateContent({
+        model,
+        contents: { parts: [...imageParts, textPart] },
+        config: { responseModalities: ['IMAGE'] },
       });
 
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        const errText = errJson.error?.message || `Google HTTP ${res.status}`;
-        lastErrorMsg = errText;
-        if (errText.includes('429') || errText.includes('Quota exceeded') || errText.includes('RESOURCE_EXHAUSTED')) {
-          break;
-        }
-        continue;
-      }
-
-      const data = await res.json();
-      const parts = data.candidates?.[0]?.content?.parts || [];
-      for (const part of parts) {
+      for (const part of response.candidates?.[0]?.content?.parts || []) {
         if (part.inlineData) {
           return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
         }
       }
 
-      const textPartContent = parts.find((p: any) => p.text)?.text;
-      if (textPartContent) {
-        throw new Error(`AI generated text instead of an image: "${textPartContent}"`);
+      const textParts = (response.candidates?.[0]?.content?.parts || [])
+        .filter((p: any) => p.text)
+        .map((p: any) => p.text)
+        .join(' ')
+        .trim();
+
+      if (textParts) {
+        throw new Error(`AI generated text instead of an image: "${textParts}"`);
       }
     } catch (err: any) {
       lastErrorMsg = err.message || lastErrorMsg;
+      if (lastErrorMsg.includes('429') || lastErrorMsg.includes('Quota exceeded') || lastErrorMsg.includes('RESOURCE_EXHAUSTED')) {
+        break;
+      }
     }
   }
 
@@ -175,7 +169,7 @@ const directGenerateGeminiImage = async (
 };
 
 /**
- * Direct client-side description generation.
+ * Direct client-side description generation using official @google/genai SDK.
  */
 const directGenerateDescription = async (
   editedImageBase64: string,
@@ -184,65 +178,65 @@ const directGenerateDescription = async (
   textModelName: string,
   apiKey: string
 ): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey });
   const cleanMime = (mimeType === 'image/jpg' ? 'image/jpeg' : mimeType) || 'image/jpeg';
   const cleanData = editedImageBase64.includes(',') ? editedImageBase64.split(',')[1] : editedImageBase64;
   const prompt = `Based on this generated Corkbrick scenario image and the original request ("${userPrompt}"), write an inspiring, professional, and concise 2-3 sentence marketing description showcasing how modular Corkbrick transforms this architectural space.`;
 
   const model = textModelName || 'gemini-3.8-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: {
         parts: [
-          { inlineData: { mimeType: cleanMime, data: cleanData } },
+          { inlineData: { data: cleanData, mimeType: cleanMime } },
           { text: prompt },
         ],
-      }],
-    }),
-  });
+      },
+    });
 
-  if (!res.ok) return '';
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    return response.text?.trim() || '';
+  } catch (error) {
+    console.warn('[directGenerateDescription] Error:', error);
+    return '';
+  }
 };
 
 /**
- * Direct client-side filename slug generation.
+ * Direct client-side filename slug generation using official @google/genai SDK.
  */
 const directGenerateFilename = async (
   description: string,
   textModelName: string,
   apiKey: string
 ): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey });
   const prompt = `Given this architectural scenario description: "${description}", generate a concise, clean kebab-case filename (e.g. scandinavian-living-corkbrick). Return ONLY the kebab-case string, with no quotes, spaces, or markdown.`;
   const model = textModelName || 'gemini-3.8-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-    }),
-  });
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: { parts: [{ text: prompt }] },
+    });
 
-  if (!res.ok) return 'corkbrick-scenario';
-  const data = await res.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'corkbrick-scenario';
-  return rawText.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'corkbrick-scenario';
+    const rawText = response.text?.trim() || 'corkbrick-scenario';
+    return rawText.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'corkbrick-scenario';
+  } catch {
+    return 'corkbrick-scenario';
+  }
 };
 
 /**
- * Helper to determine if an error is due to a missing backend router (e.g. static host 404).
+ * Helper to determine if an error is due to a missing backend router or method error (e.g. static host 404/405).
  */
 const isBackendRouteMissing = (status: number, rawText: string): boolean => {
   return (
     status === 404 ||
     status === 405 ||
     rawText.includes('NOT_FOUND') ||
+    rawText.includes('405') ||
     rawText.includes('The page could not be found') ||
     rawText.includes('Cannot POST') ||
     rawText.includes('<!DOCTYPE') ||
@@ -252,7 +246,7 @@ const isBackendRouteMissing = (status: number, rawText: string): boolean => {
 
 /**
  * Edits or synthesizes a scenario image from reference Corkbrick images and a prompt.
- * Seamlessly handles both backend Express proxy and direct client-side fallback.
+ * Seamlessly handles both backend Express proxy and direct client-side fallback via @google/genai.
  *
  * @param images - Array of reference image files uploaded by the user.
  * @param prompt - User description of the target scenario.
@@ -293,13 +287,13 @@ export const editImageWithPrompt = async (
     } else {
       const rawText = await response.text().catch(() => '');
       
-      // If backend route is missing (e.g., deployed statically on Vercel / SAP Build), trigger direct fallback
+      // If backend route is missing or returns 404/405 (e.g., deployed statically on Vercel / SAP Build), trigger direct fallback
       if (isBackendRouteMissing(response.status, rawText)) {
         if (!cleanKey) {
           throw new Error("This deployment runs on static hosting. Please click 'Setup Key' in the top bar to provide your Gemini API Key or free Hugging Face token.");
         }
 
-        console.info('[geminiService] Backend route not found, running direct client generation...');
+        console.info('[geminiService] Backend route absent/404/405, running direct client generation via SDK...');
         if (aiProvider === 'huggingface') {
           return await directGenerateHuggingFace(prompt, systemPrompt, modelName, cleanKey);
         } else {
@@ -318,9 +312,9 @@ export const editImageWithPrompt = async (
       throw new Error(msg);
     }
   } catch (err: any) {
-    // If network error occurred trying to reach /api (or direct fallback needed)
-    if (cleanKey && (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError'))) {
-      console.info('[geminiService] Network fetch to backend failed, running direct client generation...');
+    // If backend endpoint is missing, 405, or unreachable, run direct client generation
+    if (cleanKey && (err.message?.includes('Failed to fetch') || err.message?.includes('405') || err.message?.includes('NOT_FOUND') || err.message?.includes('NetworkError'))) {
+      console.info('[geminiService] Direct client generation fallback triggered:', err.message);
       if (aiProvider === 'huggingface') {
         return await directGenerateHuggingFace(prompt, systemPrompt, modelName, cleanKey);
       } else {
@@ -335,14 +329,6 @@ export const editImageWithPrompt = async (
 
 /**
  * Generates an inspiring marketing description for the synthesized scenario.
- *
- * @param editedImageBase64 - Base64 data of the generated scenario image.
- * @param mimeType - MIME type of the generated image.
- * @param userPrompt - Original user prompt.
- * @param textModelName - Model used for text reasoning.
- * @param userApiKey - Optional user-provided API key.
- * @param aiProvider - AI provider key.
- * @returns Short marketing description string.
  */
 export const generateImageDescription = async (
   editedImageBase64: string,
@@ -389,12 +375,6 @@ export const generateImageDescription = async (
 
 /**
  * Generates a clean kebab-case filename slug from the scenario description.
- *
- * @param description - Scenario description text.
- * @param textModelName - Model used for text generation.
- * @param userApiKey - Optional user-provided API key.
- * @param aiProvider - AI provider key.
- * @returns Kebab-case filename string.
  */
 export const generateFilenameFromDescription = async (
   description: string,
@@ -532,7 +512,7 @@ export interface KeyValidationResult {
 
 /**
  * Performs a live handshake and validation check with Google Gemini or Hugging Face.
- * Direct client-side verification ensures it works seamlessly across Vercel, SAP portals, and Cloud Run.
+ * Direct client-side verification via official @google/genai SDK ensures it works seamlessly across SAP portals, Vercel, and Cloud Run.
  *
  * @param apiKey - API key or token to validate.
  * @param aiProvider - AI provider key.
@@ -547,33 +527,22 @@ export const validateApiKey = async (
     return { valid: false, message: 'Please enter an API key or token.' };
   }
 
-  // 1. Direct Client-Side Validation for Google Gemini
+  // 1. Direct Client-Side Validation for Google Gemini using official SDK
   if (aiProvider === 'google_flash' || aiProvider === 'google_pro') {
     try {
-      const directRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${cleanKey}`);
-      if (directRes.ok) {
-        return {
-          valid: true,
-          canGenerateText: true,
-          canGenerateImages: true,
-          message: '✓ Key verified directly with Google AI Studio! Ready to generate.',
-        };
-      }
-
-      if (directRes.status === 404) {
-        // HTTP 404 on models listing is normal for Google Cloud keys with project-level API restrictions;
-        // do not reject the key - accept it.
-        return {
-          valid: true,
-          canGenerateText: true,
-          canGenerateImages: true,
-          message: '✓ Key connected to Google AI. Ready to generate.',
-        };
-      }
-
-      const errJson = await directRes.json().catch(() => ({}));
-      const errMsg = errJson.error?.message || `Google HTTP ${directRes.status}`;
-      
+      const ai = new GoogleGenAI({ apiKey: cleanKey });
+      await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: { parts: [{ text: 'ping' }] },
+      });
+      return {
+        valid: true,
+        canGenerateText: true,
+        canGenerateImages: true,
+        message: '✓ Key verified directly with Google Gemini! Ready to generate.',
+      };
+    } catch (err: any) {
+      const errMsg = err.message || '';
       if (errMsg.includes('API key not valid') || errMsg.includes('API_KEY_INVALID')) {
         return {
           valid: false,
@@ -581,22 +550,6 @@ export const validateApiKey = async (
           message: 'Google rejected this API key. Please check for typos or regenerate the key in Google AI Studio.',
         };
       }
-      if (errMsg.includes('blocked') || errMsg.includes('restriction') || errMsg.includes('referer')) {
-        return {
-          valid: false,
-          status: 'RESTRICTED',
-          message: 'Google reported application or referrer restrictions on this key. Please set Application Restrictions to None in Google Cloud Console.',
-        };
-      }
-      
-      // For any other responses, accept the key
-      return {
-        valid: true,
-        canGenerateImages: true,
-        message: 'Key saved and active.',
-      };
-    } catch (directErr: any) {
-      console.warn('Direct Google validation encountered network restriction:', directErr.message);
       return {
         valid: true,
         canGenerateImages: true,

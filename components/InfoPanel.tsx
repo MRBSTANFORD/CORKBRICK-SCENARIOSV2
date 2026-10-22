@@ -1,9 +1,9 @@
 
 /**
- * Rationale: Comprehensive User Guide & Help component with detailed breakdowns of
- * Gemini Flash Free Tier limits, image generation calculations, Google Cloud pro-forma billing verification,
- * and step-by-step instructions for all features (multi-image synthesis, Veo video, library).
- * Reference Task: Update User Guide with new functions, adaptations, and Gemini Flash free usage math.
+ * Rationale: User Guide & Help component with absolute pricing transparency, clearly distinguishing
+ * between 100% free Gemini text descriptions (1,500/day) and billable image generation (~0.026€/image,
+ * e.g. 3 images = ~0.08€ on Google Cloud invoices), alongside the zero-cost Hugging Face alternative.
+ * Reference Task: Correct User Guide Google API conditions for image generation transparency.
  */
 import React, { useState } from 'react';
 
@@ -79,8 +79,8 @@ const InfoPanel: React.FC = () => {
             />
             <TabButton 
               id="pricing" 
-              label="Free Tier & Limits" 
-              badge="Zero-Risk"
+              label="Pricing & Real Costs" 
+              badge="100% Transparent"
               icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>} 
             />
             <TabButton 
@@ -173,103 +173,188 @@ const InfoPanel: React.FC = () => {
               </div>
             )}
 
-            {/* PRICING & FREE TIER TAB */}
+            {/* PRICING & REAL COSTS TAB */}
             {activeTab === 'pricing' && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="font-bold text-lg text-stone-800">How to Use Gemini Flash for Free (No Fear, Zero-Risk Testing)</h3>
+                  <h3 className="font-bold text-lg text-stone-800">AI Costs & Quotas: Complete Transparency (Images vs. Descriptions)</h3>
                   <p className="text-stone-600 mt-1">
-                    Everything you need to know about Google's free quotas, billing account verification (pro-forma), and how many scenarios you can generate for $0.
+                    To ensure complete clarity with zero surprises: Google Gemini distinguishes between <strong>free text reasoning</strong> and <strong>billable image generation</strong>. Here is the exact breakdown.
                   </p>
                 </div>
 
-                {/* Free quota highlight box */}
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 space-y-3">
-                  <div className="flex items-center gap-2 text-emerald-900 font-bold text-base">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <span>Google AI Studio Tier 1 Free Allowance</span>
+                {/* 3-Column Comparison: Text vs Image vs Hugging Face */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Column 1: Gemini Descriptions (Free) */}
+                  <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50/60 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-emerald-900 uppercase tracking-wider">Gemini Text</span>
+                        <span className="text-[10px] bg-emerald-200 text-emerald-950 font-extrabold px-2 py-0.5 rounded-full">100% FREE</span>
+                      </div>
+                      <h4 className="font-bold text-stone-900 text-base">Descriptions & Copy</h4>
+                      <p className="text-xs text-stone-600 mt-1 leading-relaxed">
+                        Architectural descriptions, marketing summaries, and file slugs (powered by Gemini 3.8 Flash).
+                      </p>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-emerald-200 text-xs space-y-1">
+                      <div className="flex justify-between text-emerald-900 font-bold">
+                        <span>Daily Allowance:</span>
+                        <span>1,500 requests/day</span>
+                      </div>
+                      <div className="flex justify-between text-stone-600">
+                        <span>Cost:</span>
+                        <span className="font-semibold text-emerald-700">€0.00 / request</span>
+                      </div>
+                      <div className="flex justify-between text-stone-600">
+                        <span>Card required:</span>
+                        <span>None</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                    <div className="bg-white p-3 rounded-lg border border-emerald-100 text-center">
-                      <div className="text-xl font-bold text-emerald-800">1,500</div>
-                      <div className="text-xs text-stone-500 font-medium">Free Requests / Day</div>
-                      <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">$0.00 charge</div>
+
+                  {/* Column 2: Gemini Images (Paid Pay-As-You-Go) */}
+                  <div className="p-4 rounded-xl border border-amber-300 bg-amber-50/70 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-amber-950 uppercase tracking-wider">Gemini Images</span>
+                        <span className="text-[10px] bg-amber-200 text-amber-950 font-extrabold px-2 py-0.5 rounded-full">~0.026€ / IMG</span>
+                      </div>
+                      <h4 className="font-bold text-stone-900 text-base">Scenario Generation</h4>
+                      <p className="text-xs text-stone-600 mt-1 leading-relaxed">
+                        Multimodal Corkbrick scenario rendering (powered by Gemini 2.5 Flash Image).
+                      </p>
                     </div>
-                    <div className="bg-white p-3 rounded-lg border border-emerald-100 text-center">
-                      <div className="text-xl font-bold text-emerald-800">15 RPM</div>
-                      <div className="text-xs text-stone-500 font-medium">Requests Per Minute</div>
-                      <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">High throughput</div>
+                    <div className="mt-4 pt-3 border-t border-amber-200 text-xs space-y-1">
+                      <div className="flex justify-between text-amber-950 font-bold">
+                        <span>Cost per Image:</span>
+                        <span>~0.026€ ($0.026 USD)</span>
+                      </div>
+                      <div className="flex justify-between text-amber-900 font-semibold">
+                        <span>Real Cost (3 Images):</span>
+                        <span>~0.08€ billed</span>
+                      </div>
+                      <div className="flex justify-between text-stone-600">
+                        <span>Billing Account:</span>
+                        <span>Required by Google</span>
+                      </div>
                     </div>
-                    <div className="bg-white p-3 rounded-lg border border-emerald-100 text-center">
-                      <div className="text-xl font-bold text-emerald-800">$300</div>
-                      <div className="text-xs text-stone-500 font-medium">Google Cloud Credit</div>
-                      <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">Free 90-day trial</div>
+                  </div>
+
+                  {/* Column 3: Hugging Face (100% Free Images) */}
+                  <div className="p-4 rounded-xl border border-blue-300 bg-blue-50/70 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-blue-950 uppercase tracking-wider">Hugging Face</span>
+                        <span className="text-[10px] bg-blue-200 text-blue-950 font-extrabold px-2 py-0.5 rounded-full">ZERO COST</span>
+                      </div>
+                      <h4 className="font-bold text-stone-900 text-base">FLUX.1-schnell Free</h4>
+                      <p className="text-xs text-stone-600 mt-1 leading-relaxed">
+                        Community inference for generating Corkbrick architectural scenarios with zero spend.
+                      </p>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-blue-200 text-xs space-y-1">
+                      <div className="flex justify-between text-blue-950 font-bold">
+                        <span>Cost per Image:</span>
+                        <span className="text-emerald-700 font-extrabold">100% Free (€0.00)</span>
+                      </div>
+                      <div className="flex justify-between text-stone-600">
+                        <span>Billing Account:</span>
+                        <span>None required</span>
+                      </div>
+                      <div className="flex justify-between text-stone-600">
+                        <span>Credit Card:</span>
+                        <span className="font-semibold text-emerald-800">Never asked</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Practical Math Calculations */}
+                {/* Practical Cost Table */}
                 <div className="bg-stone-50 border border-stone-200 rounded-xl p-5 space-y-3">
                   <h4 className="font-bold text-stone-800 text-sm uppercase tracking-wider flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
-                    Practical Math: How Many Images Can You Generate For Free?
+                    Exact Pricing Reference for Google Cloud Image Generation
                   </h4>
-                  <div className="space-y-2 text-stone-700 text-xs leading-relaxed">
-                    <p>
-                      <strong>1. Text & Descriptions (Gemini 3.8 Flash):</strong> 100% free with up to <strong>1,500 requests per day</strong>. You can generate descriptions and rename scenarios endlessly without paying anything.
-                    </p>
-                    <p>
-                      <strong>2. Image Generation Unit Cost:</strong> When image synthesis is processed through Gemini / Imagen models, Google charges approximately <strong>$0.030 per image</strong> (about 3 cents per full HD rendering).
-                    </p>
-                    <p>
-                      <strong>3. Calculation with Google's $300 Free Trial Credit:</strong>
-                    </p>
-                    <div className="p-3 bg-white rounded border border-stone-200 font-mono text-[11px] text-stone-800">
-                      $300 free trial credits ÷ $0.030 per image = <strong>10,000 Free Generated Images</strong>
-                    </div>
-                    <ul className="list-disc pl-5 space-y-1 text-stone-600">
-                      <li>If you generate <strong>20 scenarios per day</strong>: you can test for <strong>500 days</strong> completely free.</li>
-                      <li>If you generate <strong>50 scenarios per day</strong>: you can test for <strong>200 days</strong> completely free.</li>
-                      <li>Casual exploration of 5–10 images costs less than $0.20, fully deducted from your free credits.</li>
-                    </ul>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-stone-200 text-stone-500 font-semibold">
+                          <th className="py-2 pr-4">Action</th>
+                          <th className="py-2 px-4">AI Model</th>
+                          <th className="py-2 px-4">Unit Cost</th>
+                          <th className="py-2 pl-4">Example Bill</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100 text-stone-700">
+                        <tr>
+                          <td className="py-2 pr-4 font-semibold text-stone-900">Marketing Descriptions</td>
+                          <td className="py-2 px-4 font-mono text-stone-500">gemini-3.8-flash</td>
+                          <td className="py-2 px-4 text-emerald-700 font-bold">€0.00 (1,500/day free)</td>
+                          <td className="py-2 pl-4 text-emerald-700 font-semibold">€0.00 (Unlimited)</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 pr-4 font-semibold text-stone-900">Scenario Image Generation</td>
+                          <td className="py-2 px-4 font-mono text-stone-500">gemini-2.5-flash-image</td>
+                          <td className="py-2 px-4 font-semibold">~0.026€ / image</td>
+                          <td className="py-2 pl-4 font-bold text-amber-900">3 images = ~0.08€</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 pr-4 font-semibold text-stone-900">10 Scenario Images</td>
+                          <td className="py-2 px-4 font-mono text-stone-500">gemini-2.5-flash-image</td>
+                          <td className="py-2 px-4 font-semibold">~0.026€ / image</td>
+                          <td className="py-2 pl-4 font-bold text-amber-900">10 images = ~0.26€</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 pr-4 font-semibold text-stone-900">Hugging Face Images</td>
+                          <td className="py-2 px-4 font-mono text-stone-500">FLUX.1-schnell</td>
+                          <td className="py-2 px-4 text-emerald-700 font-bold">€0.00</td>
+                          <td className="py-2 pl-4 text-emerald-700 font-bold">€0.00 (Always Free)</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
-                {/* Pro-forma billing explanation */}
+                {/* Google Cloud Trial Credits vs Active Pay-As-You-Go */}
                 <div className="border border-amber-200 bg-amber-50/70 rounded-xl p-5 space-y-2">
                   <div className="flex items-center gap-2 text-amber-900 font-bold text-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
-                    <span>Why does Google require a Billing Account? (Pro-Forma Verification)</span>
+                    <span>How Google Cloud Charges Your Account</span>
                   </div>
-                  <p className="text-xs text-amber-900/90 leading-relaxed">
-                    In several regions (including the EU and UK), Google requires users to link a Google Cloud billing account before activating multimodal image APIs. 
-                    <strong>This is a security & identity verification step</strong> designed by Google to prevent automated bot networks from abusing their infrastructure.
-                  </p>
-                  <ul className="text-xs text-amber-900/80 list-disc pl-5 space-y-1.5">
-                    <li><strong>Exact Pricing Transparency:</strong> While Gemini <strong>text descriptions are 100% free</strong> (1,500 requests/day), Google Cloud bills image generation at <strong>~$0.026 to $0.030 per image (~0.025€)</strong>.</li>
-                    <li><strong>Why 3 images cost ~0.08€:</strong> 3 images × ~0.026€ = <strong>0.078€ (~0.08€)</strong>. If you have an active $300 trial credit, Google deducts from the credit; if your account is on standard billing, Google charges this exact amount to your billing invoice.</li>
-                    <li><strong>Set a $1 Budget Alert:</strong> For complete peace of mind, you can set a budget threshold of $1.00 in the Google Cloud Console so Google notifies you before any significant spend occurs.</li>
+                  <ul className="text-xs text-amber-950 space-y-1.5 list-disc pl-5 leading-relaxed">
+                    <li>
+                      <strong>If you have the Google Cloud $300 Free Trial Credit active:</strong> Google deducts the ~0.026€/image from the $300 promotional balance (allowing up to ~10,000 images during the 90-day trial without spending personal money).
+                    </li>
+                    <li>
+                      <strong>If your project has standard billing (or trial expired):</strong> Google charges ~0.026€ per image directly to your credit card or invoice. For example, generating 3 images costs <strong>0.078€ (~0.08€)</strong>.
+                    </li>
+                    <li>
+                      <strong>Recommended Safety Tip:</strong> You can set a <strong>$1.00 Budget Alert</strong> in the Google Cloud Console (Billing &gt; Budgets & Alerts) so Google notifies you automatically if spend exceeds $1.00.
+                    </li>
                   </ul>
                 </div>
 
-                {/* Zero credit card alternative */}
-                <div className="border border-blue-200 bg-blue-50/60 rounded-xl p-5 space-y-2">
-                  <div className="flex items-center gap-2 text-blue-900 font-bold text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                {/* How to test with zero fear of spending money */}
+                <div className="border border-emerald-300 bg-emerald-50 rounded-xl p-5 space-y-2">
+                  <div className="flex items-center gap-2 text-emerald-950 font-bold text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
-                    <span>Don't Want to Provide Any Card Details? Use Hugging Face!</span>
+                    <span>How to Test with ZERO Fear and ZERO Money Spent (100% Free Option)</span>
                   </div>
-                  <p className="text-xs text-blue-900 leading-relaxed">
-                    If you want to experiment <strong>without adding any billing account or payment details</strong>, select <strong>Hugging Face</strong> at the top bar.
-                    Hugging Face provides free Serverless Inference with Black Forest Labs' FLUX.1-schnell model with just a free email signup. Zero credit card required!
+                  <p className="text-xs text-emerald-900 leading-relaxed">
+                    If you want to experiment, iterate, and generate Corkbrick scenarios without any risk of spending a single cent or entering a credit card:
                   </p>
+                  <ol className="text-xs text-emerald-950 list-decimal pl-5 space-y-1">
+                    <li>Select <strong>Hugging Face</strong> from the AI Provider dropdown in the top header.</li>
+                    <li>Click <strong>"Setup Key"</strong> and follow the link to get a free Hugging Face User Access Token (takes 30 seconds with just an email).</li>
+                    <li>Generate scenarios freely using <strong>FLUX.1-schnell</strong> — no billing account, no credit card, and completely <strong>€0.00 cost</strong>.</li>
+                  </ol>
                 </div>
               </div>
             )}
