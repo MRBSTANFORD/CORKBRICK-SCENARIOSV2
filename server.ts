@@ -1,7 +1,7 @@
 /**
- * Rationale: Support dynamic Cloud Run PORT binding (process.env.PORT), remove top-level
- * Vite dependency in production bundle, and add health check route for Cloud Run deployment rollout.
- * Reference Task: Fix Cloud Run deployment health check and Express 5 routing crash.
+ * Rationale: Add global CORS preflight middleware (OPTIONS 204) to resolve Google HTTP 405 Method Not Allowed
+ * in Chromium browsers (Chrome & Edge) when sending custom Authorization and JSON headers.
+ * Reference Task: Resolve Google HTTP 405 error in Google Chrome and Microsoft Edge.
  */
 import express from 'express';
 import path from 'path';
@@ -9,6 +9,20 @@ import fs from 'fs';
 import { GoogleGenAI, Modality, GenerateVideosOperation } from '@google/genai';
 
 const app = express();
+
+// CORS preflight handling for Chrome, Edge, Firefox, and Safari
+app.use((req, res, next) => {
+  const origin = req.headers.origin || '*';
+  res.header('Access-Control-Allow-Origin', origin);
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
+
 app.use(express.json({ limit: '50mb' }));
 
 const PORT = Number(process.env.PORT) || 3000;
